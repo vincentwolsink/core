@@ -319,6 +319,9 @@ class OptionsFlowHandler(BaseZwaveJSFlow, config_entries.OptionsFlow):
                 }
             )
 
+            self.hass.async_create_task(
+                self.hass.config_entries.async_reload(self.config_entry.entry_id)
+            )
             return self.async_create_entry(title=TITLE, data={})
 
         return self.async_show_form(

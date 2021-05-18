@@ -19,6 +19,21 @@ ADDON_DISCOVERY_INFO = {
 }
 
 
+@pytest.fixture(name="persistent_notification", autouse=True)
+async def setup_persistent_notification(hass):
+    """Set up persistent notification integration."""
+    await setup.async_setup_component(hass, "persistent_notification", {})
+
+
+@pytest.fixture(name="setup_entry")
+def setup_entry_fixture():
+    """Mock entry setup."""
+    with patch(
+        "homeassistant.components.zwave_js.async_setup_entry", return_value=True
+    ) as mock_setup_entry:
+        yield mock_setup_entry
+
+
 @pytest.fixture(name="supervisor")
 def mock_supervisor_fixture():
     """Mock Supervisor."""
@@ -1059,3 +1074,30 @@ async def test_install_addon_failure(hass, supervisor, addon_installed, install_
 
     assert result["type"] == "abort"
     assert result["reason"] == "addon_install_failed"
+
+
+async def test_options_manual(hass, client, integration):
+    """Test manual settings in options flow."""
+    entry = integration
+    entry.unique_id = 1234
+
+    assert client.connect.call_count == 1
+    assert client.disconnect.call_count == 0
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+
+    assert result["type"] == "form"
+    assert result["step_id"] == "manual"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"url": "ws://1.1.1.1:3001"}
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] == "create_entry"
+
+    assert entry.data["url"] == "ws://1.1.1.1:3001"
+    assert entry.data["use_addon"] is False
+    assert entry.data["integration_created_addon"] is False
+    assert client.connect.call_count == 2
+    assert client.disconnect.call_count == 1
