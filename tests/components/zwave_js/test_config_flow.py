@@ -1109,3 +1109,22 @@ async def test_options_manual(hass, client, integration):
     assert entry.data["integration_created_addon"] is False
     assert client.connect.call_count == 2
     assert client.disconnect.call_count == 1
+
+
+async def test_options_manual_different_device(hass, integration):
+    """Test options flow manual step connecting to different device."""
+    entry = integration
+    entry.unique_id = 5678
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+
+    assert result["type"] == "form"
+    assert result["step_id"] == "manual"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"url": "ws://1.1.1.1:3001"}
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] == "abort"
+    assert result["reason"] == "different_device"
