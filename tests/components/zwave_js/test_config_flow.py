@@ -150,6 +150,19 @@ async def slow_server_version(*args):
 
 
 @pytest.mark.parametrize(
+    "flow, flow_params",
+    [
+        (
+            "flow",
+            lambda entry: {
+                "handler": DOMAIN,
+                "context": {"source": config_entries.SOURCE_USER},
+            },
+        ),
+        ("options", lambda entry: {"handler": entry.entry_id}),
+    ],
+)
+@pytest.mark.parametrize(
     "url, server_version_side_effect, server_version_timeout, error",
     [
         (
@@ -172,20 +185,15 @@ async def slow_server_version(*args):
         ),
     ],
 )
-async def test_manual_errors(
-    hass,
-    url,
-    error,
-):
+async def test_manual_errors(hass, integration, url, error, flow, flow_params):
     """Test all errors with a manual set up."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": config_entries.SOURCE_USER}
-    )
+    entry = integration
+    result = await getattr(hass.config_entries, flow).async_init(**flow_params(entry))
 
     assert result["type"] == "form"
     assert result["step_id"] == "manual"
 
-    result = await hass.config_entries.flow.async_configure(
+    result = await getattr(hass.config_entries, flow).async_configure(
         result["flow_id"],
         {
             "url": url,
