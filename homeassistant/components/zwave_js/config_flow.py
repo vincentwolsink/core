@@ -474,9 +474,11 @@ class OptionsFlowHandler(BaseZwaveJSFlow, config_entries.OptionsFlow):
         self.revert_reason = reason
         addon_config_input = {
             CONF_USB_PATH: self.original_addon_config[CONF_ADDON_DEVICE],
-            CONF_NETWORK_KEY: self.original_addon_config[CONF_ADDON_DEVICE],
-            CONF_LOG_LEVEL: self.original_addon_config[CONF_ADDON_DEVICE],
-            CONF_EMULATE_HARDWARE: self.original_addon_config[CONF_ADDON_DEVICE],
+            CONF_NETWORK_KEY: self.original_addon_config[CONF_ADDON_NETWORK_KEY],
+            CONF_LOG_LEVEL: self.original_addon_config[CONF_ADDON_LOG_LEVEL],
+            CONF_EMULATE_HARDWARE: self.original_addon_config[
+                CONF_ADDON_EMULATE_HARDWARE
+            ],
         }
         _LOGGER.debug("Reverting add-on options, reason: %s", reason)
         return await self.async_step_configure_addon(addon_config_input)
