@@ -1103,7 +1103,6 @@ async def test_options_manual(hass, client, integration):
     await hass.async_block_till_done()
 
     assert result["type"] == "create_entry"
-
     assert entry.data["url"] == "ws://1.1.1.1:3001"
     assert entry.data["use_addon"] is False
     assert entry.data["integration_created_addon"] is False
@@ -1128,3 +1127,39 @@ async def test_options_manual_different_device(hass, integration):
 
     assert result["type"] == "abort"
     assert result["reason"] == "different_device"
+
+
+async def test_options_not_addon(hass, client, supervisor, integration):
+    """Test options flow and opting out of add-on on Supervisor."""
+    entry = integration
+    entry.unique_id = 1234
+
+    assert client.connect.call_count == 1
+    assert client.disconnect.call_count == 0
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+
+    assert result["type"] == "form"
+    assert result["step_id"] == "on_supervisor"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"use_addon": False}
+    )
+
+    assert result["type"] == "form"
+    assert result["step_id"] == "manual"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            "url": "ws://localhost:3000",
+        },
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] == "create_entry"
+    assert entry.data["url"] == "ws://localhost:3000"
+    assert entry.data["use_addon"] is False
+    assert entry.data["integration_created_addon"] is False
+    assert client.connect.call_count == 2
+    assert client.disconnect.call_count == 1
